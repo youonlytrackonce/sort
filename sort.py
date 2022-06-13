@@ -32,6 +32,8 @@ from filterpy.kalman import KalmanFilter
 
 np.random.seed(0)
 
+import random
+
 
 def linear_assignment(cost_matrix):
   try:
@@ -278,7 +280,9 @@ if __name__ == '__main__':
   colours = np.random.rand(32, 3) #used only for display
   if(display):
     if not os.path.exists('mot_benchmark'):
-      print('\n\tERROR: mot_benchmark link not found!\n\n    Create a symbolic link to the MOT benchmark\n    (https://motchallenge.net/data/2D_MOT_2015/#download). E.g.:\n\n    $ ln -s /path/to/MOT2015_challenge/2DMOT2015 mot_benchmark\n\n')
+      print('\n\tERROR: mot_benchmark link not found!\n\n    Create a symbolic link to the MOT benchmark\n    ('
+            'https://motchallenge.net/data/2D_MOT_2015/#download). E.g.:\n\n    $ ln -s '
+            '/path/to/MOT2015_challenge/2DMOT2015 mot_benchmark\n\n')
       exit()
     plt.ion()
     fig = plt.figure()
@@ -286,7 +290,10 @@ if __name__ == '__main__':
 
   if not os.path.exists('output'):
     os.makedirs('output')
-  pattern = os.path.join(args.seq_path, phase, '*', 'det', 'det.txt')
+  if phase == 'test':
+    pattern = os.path.join(args.seq_path, phase, '*', 'gt', 'gt.txt')
+  else:
+    pattern = os.path.join(args.seq_path, phase, '*', 'det', 'det.txt')
   for seq_dets_fn in glob.glob(pattern):
     mot_tracker = Sort(max_age=args.max_age, 
                        min_hits=args.min_hits,
@@ -300,6 +307,10 @@ if __name__ == '__main__':
         frame += 1 #detection and frame numbers begin at 1
         dets = seq_dets[seq_dets[:, 0]==frame, 2:7]
         dets[:, 2:4] += dets[:, 0:2] #convert to [x1,y1,w,h] to [x1,y1,x2,y2]
+        det_num = len(dets[:, 0])
+        eras_num = int((det_num/4))
+        ra_in = random.sample(range(0, det_num), eras_num)
+        dets_ = np.delete(dets, ra_in, 0)
         total_frames += 1
 
         if(display):
@@ -309,7 +320,7 @@ if __name__ == '__main__':
           plt.title(seq + ' Tracked Targets')
 
         start_time = time.time()
-        trackers = mot_tracker.update(dets)
+        trackers = mot_tracker.update(dets_)
         cycle_time = time.time() - start_time
         total_time += cycle_time
 
